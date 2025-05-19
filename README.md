@@ -1,12 +1,11 @@
 # Kerbrute
-[![CircleCI](https://circleci.com/gh/ropnop/kerbrute.svg?style=svg)](https://circleci.com/gh/ropnop/kerbrute)
 
 A tool to quickly bruteforce and enumerate valid Active Directory accounts through Kerberos Pre-Authentication
 
-Grab the latest binaries from the [releases page](https://github.com/ropnop/kerbrute/releases/latest) to get started.
+Grab the latest binaries from the [releases page](https://github.com/mr-pmillz/kerbrute/releases/latest) to get started.
 
 ## Background
-This tool grew out of some [bash scripts](https://github.com/ropnop/kerberos_windows_scripts) I wrote a few years ago to perform bruteforcing using the Heimdal Kerberos client from Linux. I wanted something that didn't require privileges to install a Kerberos client, and when I found the amazing pure Go implementation of Kerberos [gokrb5](https://github.com/jcmturner/gokrb5), I decided to finally learn Go and write this. 
+This tool grew out of some [bash scripts](https://github.com/ropnop/kerberos_windows_scripts) I wrote a few years ago to perform bruteforcing using the Heimdal Kerberos client from Linux. I wanted something that didn't require privileges to install a Kerberos client, and when I found the amazing pure Go implementation of Kerberos [gokrb5](https://github.com/mr-pmillz/gokrb5), I decided to finally learn Go and write this. 
 
 Bruteforcing Windows passwords with Kerberos is much faster than any other approach I know of, and potentially stealthier since pre-authentication failures do not trigger that "traditional" `An account failed to log on` event 4625. With Kerberos, you can validate a username or test a login by only sending one UDP frame to the KDC (Domain Controller)
 
@@ -158,10 +157,10 @@ Version: dev (n/a) - 05/11/19 - Ronnie Flathers @ropnop
 ```
 
 ## Installing
-You can download pre-compiled binaries for Linux, Windows and Mac from the [releases page](https://github.com/ropnop/kerbrute/releases/tag/latest). If you want to live on the edge, you can also install with Go:
+You can download pre-compiled binaries for Linux, Windows and Mac from the [releases page](https://github.com/mr-pmillz/kerbrute/releases/tag/latest). If you want to live on the edge, you can also install with Go:
 
 ```
-$ go get github.com/ropnop/kerbrute
+$ go get github.com/mr-pmillz/kerbrute
 ```
 
 With the repository cloned, you can also use the Make file to compile for common architectures:
@@ -193,6 +192,6 @@ kerbrute_darwin_amd64      kerbrute_linux_amd64       kerbrute_windows_amd64.exe
 ```
 
 ## Credits
-Huge shoutout to jcmturner for his pure Go implementation of KRB5: https://github.com/jcmturner/gokrb5 . An amazing project and very well documented. Couldn't have done any of this without that project. 
+Huge shoutout to jcmturner for his pure Go implementation of KRB5: https://github.com/mr-pmillz/gokrb5 . An amazing project and very well documented. Couldn't have done any of this without that project. 
 
 Shoutout to [audibleblink](https://github.com/audibleblink) for the suggestion and implementation of the `delay` option!

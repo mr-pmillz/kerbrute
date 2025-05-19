@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ropnop/kerbrute/util"
+	"github.com/mr-pmillz/kerbrute/util"
 
 	"github.com/spf13/cobra"
 )
@@ -68,7 +68,6 @@ func passwordSpray(cmd *cobra.Command, args []string) {
 	} else {
 		scanner = bufio.NewScanner(os.Stdin)
 	}
-	
 
 	for i := 0; i < threads; i++ {
 		go makeSprayWorker(ctx, usersChan, &wg, password, userAsPass)

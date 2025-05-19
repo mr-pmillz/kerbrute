@@ -1,17 +1,18 @@
 package session
 
 import (
+	"context"
 	"fmt"
-	"github.com/ropnop/kerbrute/util"
+	"github.com/mr-pmillz/kerbrute/util"
 	"html/template"
 	"os"
 	"strings"
 
-	"github.com/ropnop/gokrb5/v8/iana/errorcode"
+	"github.com/mr-pmillz/gokrb5/v8/iana/errorcode"
 
-	kclient "github.com/ropnop/gokrb5/v8/client"
-	kconfig "github.com/ropnop/gokrb5/v8/config"
-	"github.com/ropnop/gokrb5/v8/messages"
+	kclient "github.com/mr-pmillz/gokrb5/v8/client"
+	kconfig "github.com/mr-pmillz/gokrb5/v8/config"
+	"github.com/mr-pmillz/gokrb5/v8/messages"
 )
 
 const krb5ConfigTemplateDNS = `[libdefaults]
@@ -28,6 +29,7 @@ default_realm = {{.Realm}}
 }
 `
 
+// KerbruteSession ...
 type KerbruteSession struct {
 	Domain       string
 	Realm        string
@@ -36,18 +38,22 @@ type KerbruteSession struct {
 	Config       *kconfig.Config
 	Verbose      bool
 	SafeMode     bool
-	HashFile *os.File
-	Logger *util.Logger
+	HashFile     *os.File
+	Logger       *util.Logger
 }
 
+// KerbruteSessionOptions ...
 type KerbruteSessionOptions struct {
-	Domain string
+	Domain           string
 	DomainController string
-	Verbose bool
-	SafeMode bool
-	Downgrade bool
-	HashFilename string
-	logger *util.Logger
+	Verbose          bool
+	SafeMode         bool
+	Downgrade        bool
+	HashFilename     string
+	Socks5Proxy      string // "host:port"
+	Socks5Username   string
+	Socks5Password   string
+	logger           *util.Logger
 }
 
 func NewKerbruteSession(options KerbruteSessionOptions) (k KerbruteSession, err error) {
@@ -73,30 +79,52 @@ func NewKerbruteSession(options KerbruteSessionOptions) (k KerbruteSession, err 
 	realm := strings.ToUpper(options.Domain)
 	configstring := buildKrb5Template(realm, options.DomainController)
 	Config, err := kconfig.NewFromString(configstring)
-	if options.Downgrade {
-		Config.LibDefaults.DefaultTktEnctypeIDs = []int32{23} // downgrade to arcfour-hmac-md5 for crackable AS-REPs
-		options.logger.Log.Info("Using downgraded encryption: arcfour-hmac-md5")
-	}
 	if err != nil {
 		panic(err)
 	}
-	_, kdcs, err := Config.GetKDCs(realm, false)
+
+	// Configure SOCKS5 proxy if provided
+	if options.Socks5Proxy != "" {
+		Config.EnableSocks5(options.Socks5Proxy, options.Socks5Username, options.Socks5Password)
+		options.logger.Log.Infof("Using SOCKS5 proxy: %s", options.Socks5Proxy)
+
+		// If username/password authentication is used, log that too (without showing the actual password)
+		if options.Socks5Username != "" {
+			if options.Socks5Password != "" {
+				options.logger.Log.Infof("Using SOCKS5 proxy authentication with username: %s", options.Socks5Username)
+			} else {
+				options.logger.Log.Infof("Using SOCKS5 proxy with username: %s but no password", options.Socks5Username)
+			}
+		}
+	}
+
+	// Create a context and apply it to the config
+	ctx := context.Background()
+	configWithContext := Config.WithContext(ctx)
+
+	if options.Downgrade {
+		configWithContext.LibDefaults.DefaultTktEnctypeIDs = []int32{23} // downgrade to arcfour-hmac-md5 for crackable AS-REPs
+		options.logger.Log.Info("Using downgraded encryption: arcfour-hmac-md5")
+	}
+
+	// Use the config with context for all KDC operations
+	_, kdcs, err := configWithContext.GetKDCs(realm, false)
 	if err != nil {
 		err = fmt.Errorf("Couldn't find any KDCs for realm %s. Please specify a Domain Controller", realm)
 	}
+
 	k = KerbruteSession{
 		Domain:       options.Domain,
 		Realm:        realm,
 		Kdcs:         kdcs,
 		ConfigString: configstring,
-		Config:       Config,
+		Config:       configWithContext, // Use the config with context
 		Verbose:      options.Verbose,
 		SafeMode:     options.SafeMode,
-		HashFile: hashFile,
+		HashFile:     hashFile,
 		Logger:       options.logger,
 	}
 	return k, err
-
 }
 
 func buildKrb5Template(realm, domainController string) string {
